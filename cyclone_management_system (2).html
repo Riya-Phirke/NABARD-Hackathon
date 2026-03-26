@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CycloneShield — Smart Cyclone Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --danger:#e63946;--warn:#f4a261;--safe:#2a9d8f;--info:#457b9d;
+  --bg:#0b0f1a;--surface:#131929;--surface2:#1a2236;--border:#253050;
+  --text:#e8eaf0;--muted:#7a8aaa;--accent:#4fc3f7;
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;--font-mono:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;}
+
+/* ── HEADER ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--font-head);font-size:20px;font-weight:800;letter-spacing:-0.5px;}
+.logo span{color:var(--accent);}
+.header-right{display:flex;align-items:center;gap:16px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--danger);font-family:var(--font-mono);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--danger);animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+.state-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font-body);font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer;outline:none;}
+.intensity-wrap{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.intensity-wrap input[type=range]{width:90px;accent-color:var(--warn);}
+#intensity-label{font-family:var(--font-mono);font-size:12px;color:var(--warn);min-width:50px;}
+
+/* ── LAYOUT ── */
+.main{display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto 1fr;height:calc(100vh - 60px);}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:16px;}
+.map-area{position:relative;overflow:hidden;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:14px;}
+.tab{flex:1;padding:7px 4px;text-align:center;font-size:11px;font-weight:600;font-family:var(--font-head);border-radius:7px;cursor:pointer;color:var(--muted);transition:all .2s;letter-spacing:.3px;}
+.tab.active{background:var(--accent);color:#0b0f1a;}
+
+/* ── SIDEBAR PANELS ── */
+.panel{display:none;}.panel.active{display:block;}
+.panel-title{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+
+/* ── VILLAGE CARDS ── */
+.village-list{display:flex;flex-direction:column;gap:6px;}
+.village-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.village-card:hover{border-color:var(--accent);transform:translateX(2px);}
+.village-card.selected{border-color:var(--accent);background:#1a2842;}
+.vc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.vc-name{font-size:13px;font-weight:600;font-family:var(--font-head);}
+.risk-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--font-mono);}
+.risk-HIGH{background:rgba(230,57,70,.18);color:var(--danger);border:1px solid rgba(230,57,70,.3);}
+.risk-MEDIUM{background:rgba(244,162,97,.15);color:var(--warn);border:1px solid rgba(244,162,97,.3);}
+.risk-LOW{background:rgba(42,157,143,.15);color:var(--safe);border:1px solid rgba(42,157,143,.3);}
+.vc-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;}
+.vc-score{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+
+/* ── RISK METER ── */
+.risk-meter{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+.meter-label{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.meter-bar-wrap{background:#253050;border-radius:4px;height:8px;overflow:hidden;margin-bottom:6px;}
+.meter-bar{height:100%;border-radius:4px;transition:width .6s ease;}
+.meter-val{font-family:var(--font-mono);font-size:20px;font-weight:500;}
+
+/* ── SHELTER CARDS ── */
+.shelter-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;}
+.sh-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.sh-name{font-size:12px;font-weight:600;font-family:var(--font-head);}
+.sh-cap{font-size:11px;font-family:var(--font-mono);}
+.cap-bar-wrap{background:#253050;border-radius:4px;height:5px;overflow:hidden;margin-bottom:5px;}
+.cap-bar{height:100%;border-radius:4px;transition:width .5s ease;}
+.sh-status{font-size:10px;font-weight:600;font-family:var(--font-mono);}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;font-family:var(--font-head);cursor:pointer;border:none;transition:all .15s;letter-spacing:.3px;}
+.btn-primary{background:var(--accent);color:#0b0f1a;}
+.btn-primary:hover{background:#7dd3f7;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#c1121f;}
+.btn-outline{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+.btn-outline:hover{background:rgba(79,195,247,.1);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-full{width:100%;justify-content:center;margin-top:6px;}
+
+/* ── RESOURCE CARDS ── */
+.resource-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.res-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;}
+.res-icon{font-size:18px;margin-bottom:4px;}
+.res-val{font-family:var(--font-mono);font-size:18px;font-weight:500;}
+.res-label{font-size:10px;color:var(--muted);}
+.res-bar-wrap{background:#253050;border-radius:4px;height:4px;overflow:hidden;margin-top:6px;}
+.res-bar{height:100%;border-radius:4px;background:var(--accent);transition:width .5s;}
+
+/* ── MAP SVG ── */
+.map-container{width:100%;height:100%;position:relative;}
+#main-map{width:100%;height:100%;}
+.village-node{cursor:pointer;transition:all .2s;}
+.village-node:hover .vnode-circle{filter:brightness(1.3);}
+.road-line{stroke-linecap:round;stroke-linejoin:round;}
+.road-flooded{stroke-dasharray:6 4;animation:roadblink 1.5s infinite;}
+@keyframes roadblink{0%,100%{opacity:1;}50%{opacity:.4;}}
+.route-highlight{animation:routepulse 1.5s infinite;}
+@keyframes routepulse{0%,100%{stroke-opacity:.9;}50%{stroke-opacity:.4;}}
+.shelter-marker{cursor:pointer;}
+.shelter-marker:hover{filter:brightness(1.2);}
+.tooltip{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:12px;pointer-events:none;z-index:50;min-width:160px;display:none;}
+.tooltip.show{display:block;}
+
+/* ── ALERT PANEL ── */
+.alert-log{display:flex;flex-direction:column;gap:6px;}
+.alert-item{background:var(--surface2);border-left:3px solid;border-radius:0 8px 8px 0;padding:8px 10px;font-size:11px;line-height:1.5;}
+.alert-item.danger{border-color:var(--danger);}
+.alert-item.warn{border-color:var(--warn);}
+.alert-item.info{border-color:var(--info);}
+.alert-item.safe{border-color:var(--safe);}
+.alert-time{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.alert-msg{color:var(--text);margin-top:2px;}
+
+/* ── STAT ROW ── */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.stat-val{font-family:var(--font-mono);font-size:20px;font-weight:500;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* ── ROUTE INFO ── */
+.route-card{background:var(--surface2);border:1px solid var(--safe);border-radius:10px;padding:12px;margin-bottom:8px;}
+.route-step{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border);}
+.route-step:last-child{border-bottom:none;}
+.route-dot{width:8px;height:8px;border-radius:50%;background:var(--safe);flex-shrink:0;}
+.route-dot.blocked{background:var(--danger);}
+
+/* ── SIMULATION PANEL ── */
+.sim-info{background:var(--surface2);border:1px solid var(--warn);border-radius:10px;padding:12px;margin-bottom:8px;font-size:12px;line-height:1.7;}
+.sim-info strong{color:var(--warn);}
+
+/* ── NOTIFICATION TOAST ── */
+.toast{position:fixed;top:70px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:13px;z-index:999;max-width:320px;transform:translateX(360px);transition:transform .3s ease;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.toast.show{transform:translateX(0);}
+.toast-title{font-family:var(--font-head);font-weight:700;margin-bottom:3px;}
+.toast.danger .toast-title{color:var(--danger);}
+.toast.warn .toast-title{color:var(--warn);}
+.toast.safe .toast-title{color:var(--safe);}
+.toast.info .toast-title{color:var(--accent);}
+
+/* ── SCROLL ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.divider{height:1px;background:var(--border);margin:12px 0;}
+.section-gap{margin-top:12px;}
+
+/* ── REPORT PANEL ── */
+.report-scope-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+.report-scope-label{font-size:11px;color:var(--muted);margin-bottom:6px;font-family:var(--font-mono);}
+.report-select{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--font-body);font-size:13px;padding:8px 12px;border-radius:8px;cursor:pointer;outline:none;width:100%;margin-bottom:8px;}
+.report-select:focus{border-color:var(--accent);}
+.report-preview{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;font-size:11px;line-height:1.7;}
+.report-preview-title{font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;}
+.rp-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(37,48,80,.6);}
+.rp-row:last-child{border-bottom:none;}
+.rp-key{color:var(--muted);}
+.rp-val{font-family:var(--font-mono);color:var(--text);}
+.rp-badge{padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.btn-success{background:var(--safe);color:#fff;}
+.btn-success:hover{background:#23897e;}
+.report-section-head{font-family:var(--font-head);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:10px 0 5px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Cyclone<span>Shield</span></div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE MONITORING</div>
+    <select class="state-select" id="state-select" onchange="changeState()">
+      <option value="odisha">Odisha</option>
+      <option value="andhra">Andhra Pradesh</option>
+    </select>
+    <div class="intensity-wrap">
+      <span>Intensity:</span>
+      <input type="range" id="intensity-slider" min="1" max="5" value="2" oninput="updateIntensity(this.value)"/>
+      <span id="intensity-label">Cat 2</span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('risk')">Risk</div>
+      <div class="tab" onclick="switchTab('route')">Routes</div>
+      <div class="tab" onclick="switchTab('shelter')">Shelter</div>
+      <div class="tab" onclick="switchTab('relief')">Relief</div>
+      <div class="tab" onclick="switchTab('alerts')">Alerts</div>
+      <div class="tab" onclick="switchTab('report')">Reports</div>
+    </div>
+
+    <!-- RISK PANEL -->
+    <div class="panel active" id="panel-risk">
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-val" id="stat-high" style="color:var(--danger)">0</div><div class="stat-lbl">High Risk</div></div>
+        <div class="stat-box"><div class="stat-val" id="stat-med" style="color:var(--warn)">0</div><div class="stat-lbl">Medium</div></div>
+        <div class="stat-box"><div class="stat-val" id="stat-low" style="color:var(--safe)">0</div><div class="stat-lbl">Low Risk</div></div>
+      </div>
+      <p class="panel-title">Villages — <span id="state-label">Odisha</span></p>
+      <div class="village-list" id="village-list"></div>
+      <div class="divider"></div>
+      <button class="btn btn-danger btn-full" onclick="sendAlerts()">&#9888; Send Alerts to High-Risk Villages</button>
+    </div>
+
+    <!-- ROUTE PANEL -->
+    <div class="panel" id="panel-route">
+      <p class="panel-title">Evacuation Routes</p>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">Select Village</label>
+        <select class="state-select" style="width:100%" id="route-village-select" onchange="computeRoute()"></select>
+      </div>
+      <div id="route-result">
+        <div style="font-size:12px;color:var(--muted);text-align:center;padding:20px 0;">Select a village to see safe evacuation route</div>
+      </div>
+    </div>
+
+    <!-- SHELTER PANEL -->
+    <div class="panel" id="panel-shelter">
+      <p class="panel-title">Shelter Status</p>
+      <div id="shelter-list"></div>
+      <button class="btn btn-outline btn-full section-gap" onclick="refreshShelters()">↻ Refresh Capacity</button>
+    </div>
+
+    <!-- RELIEF PANEL -->
+    <div class="panel" id="panel-relief">
+      <p class="panel-title">Relief Resources</p>
+      <div class="resource-grid" id="resource-grid"></div>
+      <div class="divider"></div>
+      <p class="panel-title">Distribution Priority</p>
+      <div id="relief-priority"></div>
+      <button class="btn btn-primary btn-full section-gap" onclick="deployRelief()">&#128640; Deploy Relief Resources</button>
+    </div>
+
+    <!-- ALERTS PANEL -->
+    <div class="panel" id="panel-alerts">
+      <p class="panel-title">Alert Log</p>
+      <div class="alert-log" id="alert-log">
+        <div style="font-size:12px;color:var(--muted);text-align:center;padding:20px 0;">No alerts yet. System monitoring active.</div>
+      </div>
+    </div>
+
+    <!-- REPORT PANEL -->
+    <div class="panel" id="panel-report">
+      <p class="panel-title">Download Reports</p>
+      <div class="report-scope-wrap">
+        <div class="report-scope-label">REPORT SCOPE</div>
+        <select class="report-select" id="report-scope" onchange="updateReportPreview()">
+          <option value="state">Entire State</option>
+          <option value="village">Specific Village</option>
+        </select>
+        <div id="report-village-wrap" style="display:none;">
+          <div class="report-scope-label" style="margin-top:6px;">SELECT VILLAGE</div>
+          <select class="report-select" id="report-village-select" onchange="updateReportPreview()"></select>
+        </div>
+        <div class="report-scope-label" style="margin-top:6px;">REPORT TYPE</div>
+        <select class="report-select" id="report-type" onchange="updateReportPreview()">
+          <option value="full">Full Situation Report</option>
+          <option value="risk">Risk Assessment Only</option>
+          <option value="shelter">Shelter Status Only</option>
+          <option value="relief">Relief Resources Only</option>
+        </select>
+      </div>
+
+      <div class="report-preview" id="report-preview">
+        <div class="report-preview-title" id="rp-title">Report Preview</div>
+        <div id="rp-body"></div>
+      </div>
+
+      <button class="btn btn-success btn-full" onclick="downloadReport()">
+        ⬇ Download Report (HTML)
+      </button>
+      <button class="btn btn-outline btn-full" style="margin-top:6px;" onclick="printReport()">
+        🖨 Print / Save as PDF
+      </button>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- MAP AREA -->
+  <div class="map-area" id="map-area">
+    <svg id="main-map" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="tooltip" id="tooltip"></div>
+    <div style="position:absolute;bottom:14px;right:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:11px;">
+      <div style="font-family:var(--font-head);font-size:10px;color:var(--muted);margin-bottom:6px;letter-spacing:1px;">LEGEND</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="rgba(230,57,70,.8)"/></svg> High Risk Village</div>
+        <div style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="rgba(244,162,97,.8)"/></svg> Medium Risk Village</div>
+        <div style="display:flex;align-items:center;gap=6px;"><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="rgba(42,157,143,.8)"/></svg> Low Risk Village</div>
+        <div style="display:flex;align-items:center;gap:6px;"><svg width="14" height="12"><rect x="1" y="1" width="12" height="10" rx="2" fill="rgba(79,195,247,.6)" stroke="var(--accent)" stroke-width="1"/></svg> Cyclone Shelter</div>
+        <div style="display:flex;align-items:center;gap:6px;"><svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke="#4a5568" stroke-width="2"/></svg> Road (Safe)</div>
+        <div style="display:flex;align-items:center;gap:6px;"><svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke="var(--danger)" stroke-width="2" stroke-dasharray="3 2"/></svg> Road (Flooded)</div>
+        <div style="display:flex;align-items:center;gap:6px;"><svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke="var(--safe)" stroke-width="3"/></svg> Evacuation Route</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toast-title"></div>
+  <div id="toast-msg" style="font-size:12px;color:var(--muted);"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// DATA
+// ══════════════════════════════════════
+const DATA = {
+  odisha: {
+    label: 'Odisha',
+    villages: [
+      {id:'v1',name:'Erasama',risk:'HIGH',score:87,pop:4200,district:'Jagatsinghpur',x:520,y:180},
+      {id:'v2',name:'Balikuda',risk:'HIGH',score:82,pop:3100,district:'Jagatsinghpur',x:470,y:220},
+      {id:'v3',name:'Kujang',risk:'HIGH',score:79,pop:5600,district:'Jagatsinghpur',x:560,y:250},
+      {id:'v4',name:'Tirtol',risk:'MEDIUM',score:61,pop:2800,district:'Jagatsinghpur',x:430,y:290},
+      {id:'v5',name:'Aul',risk:'MEDIUM',score:55,pop:3400,district:'Kendrapara',x:540,y:320},
+      {id:'v6',name:'Rajnagar',risk:'MEDIUM',score:52,pop:4100,district:'Kendrapara',x:490,y:370},
+      {id:'v7',name:'Pattamundai',risk:'LOW',score:34,pop:6200,district:'Kendrapara',x:380,y:340},
+      {id:'v8',name:'Marshaghai',risk:'LOW',score:28,pop:2900,district:'Kendrapara',x:330,y:280},
+    ],
+    shelters: [
+      {id:'s1',name:'Erasama School Shelter',x:510,y:150,cap:500,curr:120},
+      {id:'s2',name:'Kujang Cyclone Centre',x:600,y:230,cap:800,curr:310},
+      {id:'s3',name:'Rajnagar Relief Camp',x:510,y:400,cap:600,curr:80},
+    ],
+    roads: [
+      {from:'v1',to:'v2',flooded:false},{from:'v2',to:'v3',flooded:false},
+      {from:'v2',to:'v4',flooded:false},{from:'v3',to:'v5',flooded:false},
+      {from:'v4',to:'v5',flooded:false},{from:'v5',to:'v6',flooded:false},
+      {from:'v6',to:'v7',flooded:false},{from:'v7',to:'v8',flooded:false},
+      {from:'v4',to:'v8',flooded:false},
+      {from:'v1',to:'s1',flooded:false},{from:'v3',to:'s2',flooded:false},
+      {from:'v2',to:'s1',flooded:false},{from:'v6',to:'s3',flooded:false},
+      {from:'v5',to:'s3',flooded:false},
+    ]
+  },
+  andhra: {
+    label: 'Andhra Pradesh',
+    villages: [
+      {id:'v1',name:'Uppada',risk:'HIGH',score:91,pop:3800,district:'East Godavari',x:500,y:200},
+      {id:'v2',name:'Kakinada',risk:'HIGH',score:84,pop:7200,district:'East Godavari',x:460,y:260},
+      {id:'v3',name:'Razole',risk:'HIGH',score:76,pop:4500,district:'East Godavari',x:400,y:310},
+      {id:'v4',name:'Amalapuram',risk:'MEDIUM',score:63,pop:5100,district:'East Godavari',x:340,y:280},
+      {id:'v5',name:'Narasapuram',risk:'MEDIUM',score:57,pop:3300,district:'West Godavari',x:280,y:330},
+      {id:'v6',name:'Bhimavaram',risk:'MEDIUM',score:48,pop:6800,district:'West Godavari',x:240,y:390},
+      {id:'v7',name:'Nidadavole',risk:'LOW',score:31,pop:4200,district:'West Godavari',x:200,y:310},
+      {id:'v8',name:'Tanuku',risk:'LOW',score:24,pop:3700,district:'West Godavari',x:170,y:250},
+    ],
+    shelters: [
+      {id:'s1',name:'Kakinada Port Shelter',x:490,y:230,cap:700,curr:210},
+      {id:'s2',name:'Razole Relief Centre',x:380,y:350,cap:500,curr:440},
+      {id:'s3',name:'Bhimavaram Camp',x:220,y:430,cap:900,curr:150},
+    ],
+    roads: [
+      {from:'v1',to:'v2',flooded:false},{from:'v2',to:'v3',flooded:false},
+      {from:'v3',to:'v4',flooded:false},{from:'v4',to:'v5',flooded:false},
+      {from:'v5',to:'v6',flooded:false},{from:'v6',to:'v7',flooded:false},
+      {from:'v7',to:'v8',flooded:false},{from:'v3',to:'v5',flooded:false},
+      {from:'v1',to:'s1',flooded:false},{from:'v2',to:'s1',flooded:false},
+      {from:'v3',to:'s2',flooded:false},{from:'v4',to:'s2',flooded:false},
+      {from:'v6',to:'s3',flooded:false},{from:'v5',to:'s3',flooded:false},
+    ]
+  }
+};
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let currentState = 'odisha';
+let intensity = 2;
+let selectedVillage = null;
+let activeRoute = null;
+let alertsSent = false;
+let alerts = [];
+let reliefDeployed = {food:0, boats:0, medical:0, supplies:0};
+
+function getStateData() { return JSON.parse(JSON.stringify(DATA[currentState])); }
+
+// ══════════════════════════════════════
+// INTENSITY LOGIC
+// ══════════════════════════════════════
+function getFloodedRoads(data, lvl) {
+  const thresholds = {1:[],2:[],3:['v1','s1'],4:['v1','s1','v3','s2'],5:['v1','s1','v3','s2','v2','v5']};
+  const flooded = thresholds[lvl]||[];
+  data.roads.forEach(r=>{
+    if(flooded.some(f=>r.from===f||r.to===f)) r.flooded=true;
+  });
+  return data;
+}
+
+function getShelterLoad(data, lvl) {
+  const mult = [1, 1.2, 1.6, 2.2, 3][lvl-1]||1;
+  data.shelters.forEach(s=>{ s.curr = Math.min(s.cap, Math.round(s.curr*mult)); });
+  return data;
+}
+
+function getCurrentData() {
+  let d = getStateData();
+  d = getFloodedRoads(d, intensity);
+  d = getShelterLoad(d, intensity);
+  return d;
+}
+
+// ══════════════════════════════════════
+// MAP RENDER
+// ══════════════════════════════════════
+function renderMap() {
+  const svg = document.getElementById('main-map');
+  const d = getCurrentData();
+  const vmap = {};
+  d.villages.forEach(v=>vmap[v.id]=v);
+  d.shelters.forEach(s=>vmap[s.id]=s);
+
+  // ocean bg
+  let html = `<rect width="800" height="600" fill="#0d1b2a"/>`;
+  // subtle grid
+  for(let x=0;x<800;x+=40) html+=`<line x1="${x}" y1="0" x2="${x}" y2="600" stroke="#1a2636" stroke-width="0.5"/>`;
+  for(let y=0;y<600;y+=40) html+=`<line x1="0" y1="${y}" x2="800" y2="${y}" stroke="#1a2636" stroke-width="0.5"/>`;
+
+  // coast shape
+  if(currentState==='odisha') {
+    html+=`<path d="M420 80 Q480 100 560 140 Q620 180 660 240 Q680 300 650 360 Q620 420 580 460 Q540 500 500 530 L480 560 L700 560 L700 60 L420 60 Z" fill="#0f2a1e" opacity="0.4"/>`;
+    html+=`<path d="M420 80 Q480 100 560 140 Q620 180 660 240 Q680 300 650 360 Q620 420 580 460 Q540 500 500 530" fill="none" stroke="#1d4e3a" stroke-width="2"/>`;
+    html+=`<text x="610" y="120" fill="#1d4e3a" font-size="11" font-family="DM Sans">Bay of Bengal</text>`;
+    html+=`<text x="260" y="180" fill="#253050" font-size="13" font-family="Syne" font-weight="700">ODISHA</text>`;
+    html+=`<text x="350" y="200" fill="#253050" font-size="10" font-family="DM Sans">Jagatsinghpur · Kendrapara</text>`;
+  } else {
+    html+=`<path d="M550 120 Q590 160 620 220 Q640 280 630 340 Q610 400 580 460 Q560 520 530 560 L700 560 L700 80 L550 80 Z" fill="#0f2a1e" opacity="0.4"/>`;
+    html+=`<path d="M550 120 Q590 160 620 220 Q640 280 630 340 Q610 400 580 460 Q560 520 530 560" fill="none" stroke="#1d4e3a" stroke-width="2"/>`;
+    html+=`<text x="590" y="200" fill="#1d4e3a" font-size="11" font-family="DM Sans">Bay of Bengal</text>`;
+    html+=`<text x="140" y="200" fill="#253050" font-size="13" font-family="Syne" font-weight="700">ANDHRA PRADESH</text>`;
+    html+=`<text x="170" y="218" fill="#253050" font-size="10" font-family="DM Sans">East Godavari · West Godavari</text>`;
+  }
+
+  // ROADS
+  d.roads.forEach(r=>{
+    const a = vmap[r.from], b = vmap[r.to];
+    if(!a||!b) return;
+    const isRoute = activeRoute && (
+      (activeRoute.includes(r.from) && activeRoute.includes(r.to) &&
+       Math.abs(activeRoute.indexOf(r.from)-activeRoute.indexOf(r.to))===1));
+    if(isRoute) {
+      html+=`<line class="road-line route-highlight" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${r.flooded?'#e63946':'#2a9d8f'}" stroke-width="${r.flooded?2:4}" stroke-dasharray="${r.flooded?'6 4':'none'}"/>`;
+    } else {
+      html+=`<line class="road-line ${r.flooded?'road-flooded':''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${r.flooded?'#e63946':'#4a5568'}" stroke-width="${r.flooded?2:1.5}"/>`;
+    }
+  });
+
+  // SHELTERS
+  d.shelters.forEach(s=>{
+    const pct = s.curr/s.cap;
+    const col = pct>0.85?'var(--danger)':pct>0.6?'var(--warn)':'var(--safe)';
+    html+=`<g class="shelter-marker" onclick="selectShelter('${s.id}')" data-id="${s.id}">
+      <rect x="${s.x-18}" y="${s.y-14}" width="36" height="24" rx="5" fill="rgba(79,195,247,0.15)" stroke="${col}" stroke-width="1.5"/>
+      <text x="${s.x}" y="${s.y+2}" text-anchor="middle" dominant-baseline="central" fill="${col}" font-size="9" font-family="DM Mono" font-weight="500">S${s.id.slice(1)}</text>
+      <text x="${s.x}" y="${s.y+14}" text-anchor="middle" fill="${col}" font-size="8" font-family="DM Mono">${Math.round(pct*100)}%</text>
+    </g>`;
+  });
+
+  // VILLAGES
+  d.villages.forEach(v=>{
+    const col = v.risk==='HIGH'?'rgba(230,57,70,0.85)':v.risk==='MEDIUM'?'rgba(244,162,97,0.85)':'rgba(42,157,143,0.85)';
+    const r = selectedVillage===v.id?12:v.risk==='HIGH'?10:v.risk==='MEDIUM'?8:7;
+    const isOnRoute = activeRoute && activeRoute.includes(v.id);
+    html+=`<g class="village-node" onclick="selectVillage('${v.id}')" data-id="${v.id}">
+      ${isOnRoute?`<circle cx="${v.x}" cy="${v.y}" r="${r+6}" fill="${col}" opacity="0.2"/>` : ''}
+      <circle class="vnode-circle" cx="${v.x}" cy="${v.y}" r="${r}" fill="${col}" stroke="${selectedVillage===v.id?'#fff':'transparent'}" stroke-width="2"/>
+      ${v.risk==='HIGH'&&alertsSent?`<circle cx="${v.x+8}" cy="${v.y-8}" r="5" fill="var(--warn)"/><text x="${v.x+8}" y="${v.y-8}" text-anchor="middle" dominant-baseline="central" fill="#0b0f1a" font-size="8">!</text>`:''}
+      <text x="${v.x}" y="${v.y+r+10}" text-anchor="middle" fill="#cbd5e0" font-size="9" font-family="DM Sans">${v.name}</text>
+    </g>`;
+  });
+
+  // CYCLONE ICON if high intensity
+  if(intensity>=4) {
+    const cx=630, cy=150;
+    html+=`<g opacity="0.7">
+      <circle cx="${cx}" cy="${cy}" r="30" fill="none" stroke="#e63946" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <circle cx="${cx}" cy="${cy}" r="18" fill="none" stroke="#f4a261" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <circle cx="${cx}" cy="${cy}" r="8" fill="rgba(230,57,70,0.4)" stroke="#e63946" stroke-width="1"/>
+      <text x="${cx}" y="${cy+45}" text-anchor="middle" fill="#e63946" font-size="10" font-family="DM Mono">CYCLONE</text>
+      <text x="${cx}" y="${cy+57}" text-anchor="middle" fill="#f4a261" font-size="9" font-family="DM Mono">Cat ${intensity}</text>
+    </g>`;
+  }
+
+  svg.innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// SIDEBAR RENDERS
+// ══════════════════════════════════════
+function renderRiskPanel() {
+  const d = getCurrentData();
+  const high = d.villages.filter(v=>v.risk==='HIGH').length;
+  const med = d.villages.filter(v=>v.risk==='MEDIUM').length;
+  const low = d.villages.filter(v=>v.risk==='LOW').length;
+  document.getElementById('stat-high').textContent = high;
+  document.getElementById('stat-med').textContent = med;
+  document.getElementById('stat-low').textContent = low;
+  document.getElementById('state-label').textContent = d.label || currentState;
+
+  const sorted = [...d.villages].sort((a,b)=>b.score-a.score);
+  const list = document.getElementById('village-list');
+  list.innerHTML = sorted.map(v=>`
+    <div class="village-card ${selectedVillage===v.id?'selected':''}" onclick="selectVillage('${v.id}')">
+      <div class="vc-top">
+        <span class="vc-name">${v.name}</span>
+        <span class="risk-badge risk-${v.risk}">${v.risk}</span>
+      </div>
+      <div class="vc-meta">
+        <span>${v.district}</span>
+        <span>Pop: ${v.pop.toLocaleString()}</span>
+      </div>
+      <div class="vc-score">Risk Score: ${v.score}/100</div>
+      <div style="background:#253050;border-radius:4px;height:3px;overflow:hidden;margin-top:5px;">
+        <div style="height:100%;width:${v.score}%;background:${v.risk==='HIGH'?'var(--danger)':v.risk==='MEDIUM'?'var(--warn)':'var(--safe)'};border-radius:4px;"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderShelterPanel() {
+  const d = getCurrentData();
+  const el = document.getElementById('shelter-list');
+  el.innerHTML = d.shelters.map(s=>{
+    const pct = Math.round(s.curr/s.cap*100);
+    const col = pct>85?'var(--danger)':pct>60?'var(--warn)':'var(--safe)';
+    const status = pct>90?'CRITICAL — FULL':pct>75?'HIGH LOAD':'AVAILABLE';
+    return `<div class="shelter-card" style="border-color:${pct>85?'rgba(230,57,70,.4)':pct>60?'rgba(244,162,97,.3)':'var(--border)'}">
+      <div class="sh-top">
+        <span class="sh-name">${s.name}</span>
+        <span class="sh-cap" style="color:${col}">${s.curr}/${s.cap}</span>
+      </div>
+      <div class="cap-bar-wrap">
+        <div class="cap-bar" style="width:${Math.min(100,pct)}%;background:${col}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="sh-status" style="color:${col}">${status}</span>
+        <span style="font-size:10px;color:var(--muted)">${pct}% occupied</span>
+      </div>
+      ${pct>85?`<button class="btn btn-sm btn-danger btn-full" style="margin-top:6px" onclick="redirectShelter('${s.id}')">Redirect to alternate shelter</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderReliefPanel() {
+  const d = getCurrentData();
+  const mult = intensity;
+  const resources = [
+    {key:'food',    icon:'🍱', label:'Food Kits',    base:500*mult,  baseDep:Math.round(120*mult),  color:'#4fc3f7'},
+    {key:'boats',   icon:'⛵', label:'Rescue Boats', base:30*mult,   baseDep:Math.round(8*mult),    color:'#2a9d8f'},
+    {key:'medical', icon:'🏥', label:'Medical Teams',base:20*mult,   baseDep:Math.round(5*mult),    color:'#e63946'},
+    {key:'supplies',icon:'💊', label:'Med Supplies', base:200*mult,  baseDep:Math.round(60*mult),   color:'#f4a261'},
+  ];
+  document.getElementById('resource-grid').innerHTML = resources.map(r=>{
+    const deployed = Math.min(r.base, r.baseDep + reliefDeployed[r.key]);
+    const available = r.base - deployed;
+    const pct = Math.round(deployed/r.base*100);
+    return `<div class="res-card">
+      <div class="res-icon">${r.icon}</div>
+      <div class="res-val" style="color:${r.color}">${available}</div>
+      <div class="res-label">${r.label} (available)</div>
+      <div class="res-bar-wrap"><div class="res-bar" style="width:${pct}%;background:${r.color}"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px;">${deployed} of ${r.base} deployed (${pct}%)</div>
+    </div>`;
+  }).join('');
+
+  const sorted = [...d.villages].sort((a,b)=>b.score-a.score).slice(0,5);
+  document.getElementById('relief-priority').innerHTML = sorted.map((v,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <span style="font-family:var(--font-mono);color:var(--muted);min-width:16px">${i+1}</span>
+      <span style="flex:1">${v.name}</span>
+      <span class="risk-badge risk-${v.risk}">${v.risk}</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${Math.round(v.pop/100)} kits</span>
+    </div>
+  `).join('');
+}
+
+function renderRoutePanel() {
+  const d = getCurrentData();
+  const sel = document.getElementById('route-village-select');
+  const prev = sel.value;
+  sel.innerHTML = d.villages.map(v=>`<option value="${v.id}">${v.name} (${v.risk})</option>`).join('');
+  if(prev) sel.value = prev;
+  computeRoute();
+}
+
+// ══════════════════════════════════════
+// ROUTE FINDING (BFS)
+// ══════════════════════════════════════
+function computeRoute() {
+  const d = getCurrentData();
+  const vid = document.getElementById('route-village-select').value;
+  if(!vid) return;
+  const village = d.villages.find(v=>v.id===vid);
+  if(!village) return;
+
+  const adjMap = {};
+  d.villages.forEach(v=>adjMap[v.id]=[]);
+  d.shelters.forEach(s=>adjMap[s.id]=[]);
+  d.roads.forEach(r=>{
+    if(!r.flooded) {
+      adjMap[r.from]&&adjMap[r.from].push(r.to);
+      adjMap[r.to]&&adjMap[r.to].push(r.from);
+    }
+  });
+
+  // BFS to nearest shelter
+  let found = null;
+  const visited = new Set([vid]);
+  const queue = [[vid]];
+  while(queue.length && !found) {
+    const path = queue.shift();
+    const node = path[path.length-1];
+    if(d.shelters.find(s=>s.id===node)) { found=path; break; }
+    (adjMap[node]||[]).forEach(nb=>{
+      if(!visited.has(nb)) { visited.add(nb); queue.push([...path,nb]); }
+    });
+  }
+
+  activeRoute = found;
+  const el = document.getElementById('route-result');
+  const vmap = {};
+  d.villages.forEach(v=>vmap[v.id]=v);
+  d.shelters.forEach(s=>vmap[s.id]=s);
+
+  if(!found) {
+    el.innerHTML = `<div class="route-card" style="border-color:var(--danger)">
+      <div style="color:var(--danger);font-weight:600;font-size:13px;margin-bottom:6px;">⚠ No Safe Route Found</div>
+      <div style="font-size:11px;color:var(--muted)">All roads from ${village.name} are flooded. Alert authorities for boat evacuation.</div>
+      <button class="btn btn-danger btn-full" style="margin-top:8px" onclick="callBoatEvac('${vid}')">Request Boat Evacuation</button>
+    </div>`;
+    renderMap();
+    return;
+  }
+
+  const shelter = d.shelters.find(s=>s.id===found[found.length-1]);
+  el.innerHTML = `<div class="route-card">
+    <div style="color:var(--safe);font-weight:600;font-size:13px;margin-bottom:8px;font-family:var(--font-head)">Safe Route Found</div>
+    ${found.map((id,i)=>{
+      const node = vmap[id];
+      const label = d.shelters.find(s=>s.id===id)? node.name+' [SHELTER]':node.name||id;
+      return `<div class="route-step">
+        <div class="route-dot ${i===0||i===found.length-1?'':''}"></div>
+        <span>${label}</span>
+        ${i===found.length-1?'<span style="font-size:10px;color:var(--accent)">DESTINATION</span>':''}
+      </div>`;
+    }).join('')}
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">Shelter capacity: ${shelter?Math.round(shelter.curr/shelter.cap*100):0}% full · ${found.length-1} stops</div>
+  </div>`;
+  renderMap();
+}
+
+// ══════════════════════════════════════
+// INTERACTIONS
+// ══════════════════════════════════════
+function selectVillage(id) {
+  selectedVillage = id;
+  const d = getCurrentData();
+  const v = d.villages.find(x=>x.id===id);
+  if(!v) return;
+  showToast('info',v.name,`Risk: ${v.risk} | Score: ${v.score}/100 | Pop: ${v.pop.toLocaleString()}`);
+  renderRiskPanel();
+  renderMap();
+  if(document.getElementById('panel-route').classList.contains('active')||true) {
+    document.getElementById('route-village-select').value = id;
+    computeRoute();
+  }
+}
+
+function selectShelter(id) {
+  const d = getCurrentData();
+  const s = d.shelters.find(x=>x.id===id);
+  if(!s) return;
+  const pct = Math.round(s.curr/s.cap*100);
+  showToast(pct>85?'danger':pct>60?'warn':'safe', s.name, `Capacity: ${s.curr}/${s.cap} (${pct}% full)`);
+  switchTab('shelter');
+}
+
+function sendAlerts() {
+  alertsSent = true;
+  const d = getCurrentData();
+  const highRisk = d.villages.filter(v=>v.risk==='HIGH');
+  highRisk.forEach(v=>{
+    addAlert('danger', `EVACUATION ALERT sent to ${v.name}`, `Risk Score ${v.score} — ${v.pop.toLocaleString()} residents notified. Prepare immediate evacuation.`);
+  });
+  addAlert('warn','Mass Alert Dispatched',`${highRisk.length} high-risk villages notified via SMS and IVRS.`);
+  showToast('danger','Alerts Sent!',`${highRisk.length} villages notified. Check Alerts tab.`);
+  renderMap();
+  renderRiskPanel();
+  switchTab('alerts');
+}
+
+function refreshShelters() {
+  DATA[currentState].shelters.forEach(s=>{ s.curr=Math.max(0,s.curr+Math.round((Math.random()-0.3)*30)); });
+  renderShelterPanel();
+  showToast('info','Shelter Data Refreshed','Live capacity updated from field reports.');
+}
+
+function redirectShelter(id) {
+  const d = getCurrentData();
+  const s = d.shelters.find(x=>x.id===id);
+  if(!s) return;
+  const alt = d.shelters.find(x=>x.id!==id && x.curr/x.cap<0.8);
+  if(alt) {
+    addAlert('warn','Shelter Redirect','Overflow from '+s.name+' redirected to '+alt.name);
+    showToast('warn','Redirect Issued',`People being guided to ${alt.name}`);
+  } else {
+    showToast('danger','Critical','All shelters near capacity! Requesting additional facilities.');
+  }
+}
+
+function deployRelief() {
+  const d = getCurrentData();
+  const sorted = [...d.villages].sort((a,b)=>b.score-a.score).slice(0,3);
+  const mult = intensity;
+
+  // Calculate how much to dispatch per deployment click (based on top villages' needs)
+  const totalPop = sorted.reduce((s,v)=>s+v.pop,0);
+  const foodAdd    = Math.round(totalPop/100);
+  const boatsAdd   = Math.max(1, Math.round(sorted.length * mult));
+  const medAdd     = Math.max(1, sorted.length);
+  const supplyAdd  = Math.round(totalPop/50);
+
+  const maxFood    = 500*mult - Math.round(120*mult);
+  const maxBoats   = 30*mult  - Math.round(8*mult);
+  const maxMed     = 20*mult  - Math.round(5*mult);
+  const maxSupply  = 200*mult - Math.round(60*mult);
+
+  reliefDeployed.food     = Math.min(reliefDeployed.food    + foodAdd,   maxFood);
+  reliefDeployed.boats    = Math.min(reliefDeployed.boats   + boatsAdd,  maxBoats);
+  reliefDeployed.medical  = Math.min(reliefDeployed.medical + medAdd,    maxMed);
+  reliefDeployed.supplies = Math.min(reliefDeployed.supplies+ supplyAdd, maxSupply);
+
+  sorted.forEach(v=>{
+    addAlert('info','Relief Deployed to '+v.name,`Food kits: ${Math.round(v.pop/100)} · Medical team dispatched. ETA: ${Math.round(Math.random()*30+15)} min.`);
+  });
+  showToast('safe','Relief Deployed',`+${foodAdd} kits, +${boatsAdd} boats, +${medAdd} teams dispatched.`);
+  renderReliefPanel();
+}
+
+function callBoatEvac(vid) {
+  const d = getCurrentData();
+  const v = d.villages.find(x=>x.id===vid);
+  addAlert('danger','BOAT EVACUATION REQUESTED','Requesting NDRF boat rescue for '+v.name+'. All road routes flooded.');
+  showToast('danger','Boat Evacuation','NDRF unit alerted for '+v.name);
+}
+
+// ══════════════════════════════════════
+// ALERT LOG
+// ══════════════════════════════════════
+function addAlert(type, title, msg) {
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+  alerts.unshift({type,title,msg,time});
+  const el = document.getElementById('alert-log');
+  el.innerHTML = alerts.map(a=>`
+    <div class="alert-item ${a.type}">
+      <div class="alert-time">${a.time}</div>
+      <div style="font-weight:600;font-size:12px;font-family:var(--font-head);color:${a.type==='danger'?'var(--danger)':a.type==='warn'?'var(--warn)':a.type==='safe'?'var(--safe)':'var(--accent)'}">${a.title}</div>
+      <div class="alert-msg">${a.msg}</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+function showToast(type, title, msg) {
+  const t = document.getElementById('toast');
+  t.className = `toast ${type}`;
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ══════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['risk','route','shelter','relief','alerts','report'];
+    t.classList.toggle('active',names[i]===name);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='shelter') renderShelterPanel();
+  if(name==='relief') renderReliefPanel();
+  if(name==='route') renderRoutePanel();
+  if(name==='report') initReportPanel();
+}
+
+// ══════════════════════════════════════
+// STATE / INTENSITY CHANGE
+// ══════════════════════════════════════
+function changeState() {
+  currentState = document.getElementById('state-select').value;
+  selectedVillage = null;
+  activeRoute = null;
+  alertsSent = false;
+  alerts = [];
+  reliefDeployed = {food:0, boats:0, medical:0, supplies:0};
+  document.getElementById('alert-log').innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px 0;">No alerts yet. System monitoring active.</div>';
+  renderAll();
+  showToast('info','State Changed',`Now monitoring ${DATA[currentState].label}`);
+}
+
+function updateIntensity(val) {
+  intensity = parseInt(val);
+  const labels = ['','Cat 1 — Weak','Cat 2 — Moderate','Cat 3 — Strong','Cat 4 — Very Strong','Cat 5 — Extreme'];
+  document.getElementById('intensity-label').textContent = labels[intensity];
+  activeRoute = null;
+  reliefDeployed = {food:0, boats:0, medical:0, supplies:0};
+  renderAll();
+  if(intensity>=4) {
+    addAlert('danger',`Category ${intensity} Cyclone Simulated`,`Multiple roads flooded. ${intensity>=5?'Extreme':'High'} shelter demand. Relief resources elevated.`);
+    showToast('danger',`Cat ${intensity} Intensity`,`${intensity>=5?'EXTREME':'HIGH'} — More roads blocked, shelter demand rising.`);
+    switchTab('alerts');
+  }
+}
+
+function renderAll() {
+  renderRiskPanel();
+  renderShelterPanel();
+  renderReliefPanel();
+  renderRoutePanel();
+  renderMap();
+}
+
+// ══════════════════════════════════════
+// REPORT PANEL
+// ══════════════════════════════════════
+function initReportPanel() {
+  const d = getCurrentData();
+  const sel = document.getElementById('report-village-select');
+  sel.innerHTML = d.villages.map(v=>`<option value="${v.id}">${v.name} (${v.risk})</option>`).join('');
+  updateReportPreview();
+}
+
+function updateReportPreview() {
+  const scope = document.getElementById('report-scope').value;
+  const villageWrap = document.getElementById('report-village-wrap');
+  villageWrap.style.display = scope === 'village' ? 'block' : 'none';
+  const d = getCurrentData();
+  const type = document.getElementById('report-type').value;
+  const now = new Date();
+  const ts = now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+  let title = '', body = '';
+
+  if(scope === 'state') {
+    const high = d.villages.filter(v=>v.risk==='HIGH');
+    const med  = d.villages.filter(v=>v.risk==='MEDIUM');
+    const low  = d.villages.filter(v=>v.risk==='LOW');
+    const totalPop = d.villages.reduce((s,v)=>s+v.pop,0);
+    title = `${d.label} — State Report`;
+
+    if(type==='full'||type==='risk') {
+      body += `<div class="report-section-head">Risk Overview</div>
+        <div class="rp-row"><span class="rp-key">State</span><span class="rp-val">${d.label}</span></div>
+        <div class="rp-row"><span class="rp-key">Cyclone Intensity</span><span class="rp-val">Cat ${intensity}</span></div>
+        <div class="rp-row"><span class="rp-key">Total Villages</span><span class="rp-val">${d.villages.length}</span></div>
+        <div class="rp-row"><span class="rp-key">Total Population</span><span class="rp-val">${totalPop.toLocaleString()}</span></div>
+        <div class="rp-row"><span class="rp-key">High Risk</span><span class="rp-val" style="color:var(--danger)">${high.length} villages</span></div>
+        <div class="rp-row"><span class="rp-key">Medium Risk</span><span class="rp-val" style="color:var(--warn)">${med.length} villages</span></div>
+        <div class="rp-row"><span class="rp-key">Low Risk</span><span class="rp-val" style="color:var(--safe)">${low.length} villages</span></div>`;
+    }
+    if(type==='full'||type==='shelter') {
+      const totalCap = d.shelters.reduce((s,x)=>s+x.cap,0);
+      const totalCurr = d.shelters.reduce((s,x)=>s+x.curr,0);
+      body += `<div class="report-section-head">Shelter Status</div>
+        <div class="rp-row"><span class="rp-key">Total Shelters</span><span class="rp-val">${d.shelters.length}</span></div>
+        <div class="rp-row"><span class="rp-key">Total Capacity</span><span class="rp-val">${totalCap.toLocaleString()}</span></div>
+        <div class="rp-row"><span class="rp-key">Currently Occupied</span><span class="rp-val">${totalCurr.toLocaleString()} (${Math.round(totalCurr/totalCap*100)}%)</span></div>`;
+    }
+    if(type==='full'||type==='relief') {
+      const mult = intensity;
+      body += `<div class="report-section-head">Relief Resources</div>
+        <div class="rp-row"><span class="rp-key">Food Kits</span><span class="rp-val">${500*mult} total / ${Math.round(120*mult)} deployed</span></div>
+        <div class="rp-row"><span class="rp-key">Rescue Boats</span><span class="rp-val">${30*mult} total / ${Math.round(8*mult)} deployed</span></div>
+        <div class="rp-row"><span class="rp-key">Medical Teams</span><span class="rp-val">${20*mult} total / ${Math.round(5*mult)} deployed</span></div>`;
+    }
+
+  } else {
+    const vid = document.getElementById('report-village-select').value;
+    const v = d.villages.find(x=>x.id===vid);
+    if(!v) return;
+    title = `${v.name} — Village Report`;
+    const riskCol = v.risk==='HIGH'?'var(--danger)':v.risk==='MEDIUM'?'var(--warn)':'var(--safe)';
+
+    if(type==='full'||type==='risk') {
+      const roads = d.roads.filter(r=>r.from===vid||r.to===vid);
+      const flooded = roads.filter(r=>r.flooded).length;
+      body += `<div class="report-section-head">Village Risk Profile</div>
+        <div class="rp-row"><span class="rp-key">Village</span><span class="rp-val">${v.name}</span></div>
+        <div class="rp-row"><span class="rp-key">District</span><span class="rp-val">${v.district}</span></div>
+        <div class="rp-row"><span class="rp-key">Population</span><span class="rp-val">${v.pop.toLocaleString()}</span></div>
+        <div class="rp-row"><span class="rp-key">Risk Level</span><span class="rp-val" style="color:${riskCol}">${v.risk}</span></div>
+        <div class="rp-row"><span class="rp-key">Risk Score</span><span class="rp-val">${v.score}/100</span></div>
+        <div class="rp-row"><span class="rp-key">Cyclone Intensity</span><span class="rp-val">Cat ${intensity}</span></div>
+        <div class="rp-row"><span class="rp-key">Roads Flooded</span><span class="rp-val" style="color:${flooded>0?'var(--danger)':'var(--safe)'}">${flooded} of ${roads.length}</span></div>`;
+    }
+    if(type==='full'||type==='shelter') {
+      const nearby = d.shelters.slice(0,2);
+      body += `<div class="report-section-head">Nearest Shelters</div>`;
+      nearby.forEach(s=>{
+        const pct = Math.round(s.curr/s.cap*100);
+        body += `<div class="rp-row"><span class="rp-key">${s.name}</span><span class="rp-val">${pct}% full</span></div>`;
+      });
+    }
+    if(type==='full'||type==='relief') {
+      const kits = Math.round(v.pop/100);
+      body += `<div class="report-section-head">Relief Allocation</div>
+        <div class="rp-row"><span class="rp-key">Food Kits Required</span><span class="rp-val">${kits}</span></div>
+        <div class="rp-row"><span class="rp-key">Priority Rank</span><span class="rp-val">#${[...d.villages].sort((a,b)=>b.score-a.score).findIndex(x=>x.id===vid)+1}</span></div>`;
+    }
+  }
+
+  body += `<div class="rp-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;"><span class="rp-key">Generated</span><span class="rp-val">${ts}</span></div>`;
+  document.getElementById('rp-title').textContent = title;
+  document.getElementById('rp-body').innerHTML = body;
+}
+
+function riskColor(r) {
+  return r==='HIGH'?'#e63946':r==='MEDIUM'?'#f4a261':'#2a9d8f';
+}
+
+function makeRow(label, val, labelColor, valColor) {
+  var lc = labelColor || '#7a8aaa';
+  var vc = valColor || '#e8eaf0';
+  return '<tr><td style="padding:6px 0;color:'+lc+';border-bottom:1px solid #253050;">'+label+'</td>'
+       + '<td style="padding:6px 0;border-bottom:1px solid #253050;text-align:right;color:'+vc+';">'+val+'</td></tr>';
+}
+
+function makeTableRow(cells, bg) {
+  var row = '<tr style="background:'+bg+'">';
+  cells.forEach(function(c){ row += '<td style="'+c.style+'">'+c.val+'</td>'; });
+  row += '</tr>';
+  return row;
+}
+
+function buildReportHTML() {
+  var d = getCurrentData();
+  var scope = document.getElementById('report-scope').value;
+  var type = document.getElementById('report-type').value;
+  var now = new Date();
+  var ts = now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})
+         + ' ' + now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  var typeLabels = {full:'Full Situation Report',risk:'Risk Assessment',shelter:'Shelter Status',relief:'Relief Resources'};
+  var typeLabel = typeLabels[type];
+
+  var reportTitle = '';
+  var villageData = null;
+
+  if(scope==='state') {
+    reportTitle = d.label + ' \u2014 State ' + typeLabel;
+  } else {
+    var vid = document.getElementById('report-village-select').value;
+    villageData = d.villages.find(function(x){ return x.id===vid; });
+    reportTitle = villageData.name + ' \u2014 Village ' + typeLabel;
+  }
+
+  var content = '';
+  var H3 = function(txt){ return '<h3 style="color:#4fc3f7;margin:18px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:1px;">'+txt+'</h3>'; };
+  var TH = function(txt,align){ return '<th style="padding:8px;text-align:'+(align||'left')+';color:#7a8aaa;font-weight:600;">'+txt+'</th>'; };
+
+  if(scope==='state') {
+    var high = d.villages.filter(function(v){ return v.risk==='HIGH'; });
+    var med  = d.villages.filter(function(v){ return v.risk==='MEDIUM'; });
+    var low  = d.villages.filter(function(v){ return v.risk==='LOW'; });
+    var totalPop = d.villages.reduce(function(s,v){ return s+v.pop; },0);
+
+    if(type==='full'||type==='risk') {
+      content += H3('Risk Overview');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+      content += makeRow('State', d.label);
+      content += makeRow('Cyclone Intensity', 'Category '+intensity);
+      content += makeRow('Total Villages', d.villages.length);
+      content += makeRow('Total Population', totalPop.toLocaleString());
+      content += makeRow('High Risk Villages', high.length, '#e63946', '#e63946');
+      content += makeRow('Medium Risk Villages', med.length, '#f4a261', '#f4a261');
+      content += makeRow('Low Risk Villages', low.length, '#2a9d8f', '#2a9d8f');
+      content += '</table>';
+
+      content += H3('Village Details');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+      content += '<thead><tr style="background:#1a2236;">'
+               + TH('Village') + TH('District') + TH('Population','right') + TH('Risk','center') + TH('Score','right')
+               + '</tr></thead><tbody>';
+      var sortedV = d.villages.slice().sort(function(a,b){ return b.score-a.score; });
+      sortedV.forEach(function(v,i) {
+        var bg = i%2===0 ? '#131929' : '#0f1520';
+        var rc = riskColor(v.risk);
+        var badge = '<span style="background:'+rc+'33;color:'+rc+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">'+v.risk+'</span>';
+        content += '<tr style="background:'+bg+'">'
+          + '<td style="padding:7px 8px;">'+v.name+'</td>'
+          + '<td style="padding:7px 8px;color:#7a8aaa;">'+v.district+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+v.pop.toLocaleString()+'</td>'
+          + '<td style="padding:7px 8px;text-align:center;">'+badge+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;font-family:monospace;">'+v.score+'/100</td>'
+          + '</tr>';
+      });
+      content += '</tbody></table>';
+    }
+
+    if(type==='full'||type==='shelter') {
+      var totalCap  = d.shelters.reduce(function(s,x){ return s+x.cap; },0);
+      var totalCurr = d.shelters.reduce(function(s,x){ return s+x.curr; },0);
+      content += H3('Shelter Status');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+      content += '<thead><tr style="background:#1a2236;">'+TH('Shelter')+TH('Capacity','right')+TH('Occupied','right')+TH('Status','center')+'</tr></thead><tbody>';
+      d.shelters.forEach(function(s,i) {
+        var pct = Math.round(s.curr/s.cap*100);
+        var col = pct>85?'#e63946':pct>60?'#f4a261':'#2a9d8f';
+        var status = pct>90?'CRITICAL':pct>75?'HIGH LOAD':'AVAILABLE';
+        var bg = i%2===0?'#131929':'#0f1520';
+        content += '<tr style="background:'+bg+'">'
+          + '<td style="padding:7px 8px;">'+s.name+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+s.cap+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+s.curr+' ('+pct+'%)</td>'
+          + '<td style="padding:7px 8px;text-align:center;color:'+col+';font-weight:700;font-size:11px;">'+status+'</td>'
+          + '</tr>';
+      });
+      content += '<tr style="background:#1a2236;font-weight:600;">'
+        + '<td style="padding:7px 8px;">TOTAL</td>'
+        + '<td style="padding:7px 8px;text-align:right;">'+totalCap+'</td>'
+        + '<td style="padding:7px 8px;text-align:right;">'+totalCurr+' ('+Math.round(totalCurr/totalCap*100)+'%)</td>'
+        + '<td></td></tr>';
+      content += '</tbody></table>';
+    }
+
+    if(type==='full'||type==='relief') {
+      var mult = intensity;
+      var resources = [
+        {label:'Food Kits',    total:500*mult, dep:Math.round(120*mult)},
+        {label:'Rescue Boats', total:30*mult,  dep:Math.round(8*mult)},
+        {label:'Medical Teams',total:20*mult,  dep:Math.round(5*mult)},
+        {label:'Med Supplies', total:200*mult, dep:Math.round(60*mult)},
+      ];
+      content += H3('Relief Resources');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+      content += '<thead><tr style="background:#1a2236;">'+TH('Resource')+TH('Total','right')+TH('Deployed','right')+TH('Available','right')+'</tr></thead><tbody>';
+      resources.forEach(function(r,i) {
+        var bg = i%2===0?'#131929':'#0f1520';
+        content += '<tr style="background:'+bg+'">'
+          + '<td style="padding:7px 8px;">'+r.label+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+r.total+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+r.dep+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+(r.total-r.dep)+'</td>'
+          + '</tr>';
+      });
+      content += '</tbody></table>';
+    }
+
+  } else {
+    var v = villageData;
+    var rCol = riskColor(v.risk);
+    var vroads = d.roads.filter(function(r){ return r.from===v.id||r.to===v.id; });
+    var flooded = vroads.filter(function(r){ return r.flooded; }).length;
+    var kits = Math.round(v.pop/100);
+    var sortedForRank = d.villages.slice().sort(function(a,b){ return b.score-a.score; });
+    var rank = sortedForRank.findIndex(function(x){ return x.id===v.id; })+1;
+
+    if(type==='full'||type==='risk') {
+      content += H3('Village Risk Profile');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+      content += makeRow('Village', v.name);
+      content += makeRow('District', v.district);
+      content += makeRow('Population', v.pop.toLocaleString());
+      content += makeRow('Risk Level', v.risk, '#7a8aaa', rCol);
+      content += makeRow('Risk Score', v.score+'/100');
+      content += makeRow('Cyclone Intensity', 'Category '+intensity);
+      content += makeRow('Roads Flooded', flooded+' of '+vroads.length, '#7a8aaa', flooded>0?'#e63946':'#2a9d8f');
+      content += '</table>';
+    }
+
+    if(type==='full'||type==='shelter') {
+      content += H3('Nearest Shelters');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+      content += '<thead><tr style="background:#1a2236;">'+TH('Shelter')+TH('Capacity','right')+TH('Occupancy','right')+TH('Status','center')+'</tr></thead><tbody>';
+      d.shelters.forEach(function(s,i) {
+        var pct = Math.round(s.curr/s.cap*100);
+        var col = pct>85?'#e63946':pct>60?'#f4a261':'#2a9d8f';
+        var status = pct>90?'CRITICAL':pct>75?'HIGH LOAD':'AVAILABLE';
+        var bg = i%2===0?'#131929':'#0f1520';
+        content += '<tr style="background:'+bg+'">'
+          + '<td style="padding:7px 8px;">'+s.name+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+s.cap+'</td>'
+          + '<td style="padding:7px 8px;text-align:right;">'+s.curr+' ('+pct+'%)</td>'
+          + '<td style="padding:7px 8px;text-align:center;color:'+col+';font-weight:700;font-size:11px;">'+status+'</td>'
+          + '</tr>';
+      });
+      content += '</tbody></table>';
+    }
+
+    if(type==='full'||type==='relief') {
+      content += H3('Relief Allocation');
+      content += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+      content += makeRow('Food Kits Required', kits);
+      content += makeRow('Priority Rank', '#'+rank+' of '+d.villages.length);
+      content += '</table>';
+    }
+  }
+
+  var pageStyle = [
+    'body{background:#0b0f1a;color:#e8eaf0;font-family:Arial,sans-serif;margin:0;padding:30px;}',
+    '.page{max-width:780px;margin:0 auto;background:#131929;border-radius:16px;padding:32px;border:1px solid #253050;}',
+    '.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #253050;padding-bottom:20px;margin-bottom:8px;}',
+    '.logo{font-size:22px;font-weight:800;letter-spacing:-0.5px;}',
+    '.logo span{color:#4fc3f7;}',
+    '.footer{margin-top:28px;padding-top:14px;border-top:1px solid #253050;font-size:11px;color:#7a8aaa;text-align:center;}',
+    'h3{font-size:13px;}',
+    '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
+  ].join('');
+
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>'
+    + '<title>'+reportTitle+'</title>'
+    + '<style>'+pageStyle+'</style>'
+    + '</head><body><div class="page">'
+    + '<div class="header">'
+    + '<div><div class="logo">Cyclone<span>Shield</span></div>'
+    + '<div style="font-size:11px;color:#7a8aaa;margin-top:4px;">Smart Cyclone Management System</div></div>'
+    + '<div style="text-align:right;font-size:11px;color:#7a8aaa;line-height:1.8;">'
+    + '<div style="font-size:13px;color:#e8eaf0;font-weight:600;">'+reportTitle+'</div>'
+    + '<div>Generated: '+ts+'</div>'
+    + '<div>State: '+d.label+' &nbsp;|&nbsp; Intensity: Cat '+intensity+'</div>'
+    + '</div></div>'
+    + content
+    + '<div class="footer">CycloneShield &mdash; Disaster Risk Management &nbsp;|&nbsp; Report generated '+ts+' &nbsp;|&nbsp; For official use only.</div>'
+    + '</div></body></html>';
+}
+
+function downloadReport() {
+  try {
+    var html = buildReportHTML();
+    var d = getCurrentData();
+    var scope = document.getElementById('report-scope').value;
+    var type = document.getElementById('report-type').value;
+    var filename;
+    if(scope==='state') {
+      filename = currentState+'_'+type+'_report.html';
+    } else {
+      var vid = document.getElementById('report-village-select').value;
+      var vname = (d.villages.find(function(x){ return x.id===vid; })||{name:'village'}).name;
+      filename = vname.toLowerCase().replace(/\s+/g,'_')+'_'+type+'_report.html';
+    }
+    // Use data URI to avoid blob URL revocation timing issues
+    var dataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    var a = document.createElement('a');
+    a.setAttribute('href', dataUri);
+    a.setAttribute('download', filename);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); }, 1000);
+    showToast('safe','Report Downloaded', filename+' saved.');
+  } catch(e) {
+    showToast('danger','Download Error', e.message||'Could not generate report.');
+  }
+}
+
+function printReport() {
+  try {
+    var html = buildReportHTML();
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(html, 'text/html');
+
+    var styleEl = document.getElementById('print-injected-style');
+    if(!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'print-injected-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = [
+      '.print-page{max-width:780px;margin:0 auto;background:#131929;border-radius:16px;padding:32px;border:1px solid #253050;color:#e8eaf0;font-family:Arial,sans-serif;}',
+      '.print-page .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #253050;padding-bottom:20px;margin-bottom:8px;}',
+      '.print-page h3{font-size:13px;color:#4fc3f7;margin:18px 0 8px;text-transform:uppercase;letter-spacing:1px;}',
+      '.print-page table{width:100%;border-collapse:collapse;font-size:13px;}',
+      '.print-page td,.print-page th{padding:6px 8px;}',
+      '.print-page .footer{margin-top:28px;padding-top:14px;border-top:1px solid #253050;font-size:11px;color:#7a8aaa;text-align:center;}',
+      '@media print{',
+      'body>*:not(#print-overlay){display:none!important;}',
+      '#print-overlay{display:block!important;position:static!important;padding:0!important;overflow:visible!important;}',
+      '#print-overlay .no-print{display:none!important;}',
+      '.print-page{border-radius:0!important;border:none!important;}',
+      '}'
+    ].join('');
+
+    document.getElementById('print-content').innerHTML = '<div class="print-page">' + doc.body.innerHTML + '</div>';
+    document.getElementById('print-overlay').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  } catch(e) {
+    showToast('danger','Print Error', e.message || 'Could not prepare print view.');
+  }
+}
+
+function closePrintOverlay() {
+  document.getElementById('print-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+renderAll();
+addAlert('info','System Online','CycloneShield monitoring active. DICRA data loaded. All sensors nominal.');
+</script>
+
+<!-- PRINT OVERLAY -->
+<div id="print-overlay" style="display:none;position:fixed;inset:0;background:#0b0f1a;z-index:9999;overflow:auto;padding:24px;">
+  <div style="max-width:780px;margin:0 auto;">
+    <div class="no-print" style="display:flex;gap:10px;margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button class="btn btn-outline" onclick="closePrintOverlay()">✕ Close</button>
+    </div>
+    <div id="print-content"></div>
+  </div>
+</div>
+</body>
+</html>
