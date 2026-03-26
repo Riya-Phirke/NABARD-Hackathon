@@ -107,7 +107,6 @@ This system goes beyond prediction and acts as a **complete disaster coordinatio
 ## 🛠️ Tech Stack
 
 * HTML, CSS, JavaScript
-* (Add backend/tools if used)
 
 ---
 
